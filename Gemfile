@@ -59,7 +59,7 @@ gem 'jquery-rails'
 gem 'rouge'
 
 #bootstrap add-ons
-gem 'bootstrap', '~> 4.3.1'
+gem 'bootstrap', '~> 4.0'
 gem 'momentjs-rails'
 
 #----------- user interface -----------------
