@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.3.1'
+ruby '3.2.1'
 
 #rails
 gem 'rails', '~>7.0'
@@ -68,7 +68,7 @@ gem 'rouge'
 
 #bootstrap add-ons
 #gem 'bootstrap-sass', '~> 3.4.1'
-gem 'bootstrap', '~> 4.0'
+gem 'bootstrap', '~> 5.3'
 #gem 'bootstrap-switch-rails'
 #gem 'bootstrap-toggle-rails'
 #gem 'autoprefixer-rails'
