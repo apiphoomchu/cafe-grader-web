@@ -1,68 +1,85 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.3.1'
+ruby '3.2.1'
 
 #rails
-gem 'rails', '~> 5.2.4'
+gem 'rails', '~>7.0'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
-gem 'puma', '~> 3.12'
+gem 'puma'
 
 # Reduces boot times through caching; required in config/boot.rb
-gem 'bootsnap', require: false, github: 'Shopify/bootsnap', ref: 'v1.0.0'
+gem 'bootsnap', require: false
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
 
 #---------------- database ---------------------
 #the database
-gem 'mysql2', '~> 0.4.10'
+gem 'mysql2'
 #for testing
-gem 'sqlite3', '~> 1.3'
+gem 'sqlite3'
 
 #for grader
-gem 'pg', '>= 0.18', '< 1.1'
+gem 'pg'
 #gem 'rails-controller-testing'
 #for dumping database into yaml
 #gem 'yaml_db'
 
 
-#------------- asset pipeline -----------------
+#------------- assset pipeline -----------------
 # Gems used only for assets and not required
 # in production environments by default.
-# sass-rails is depricated, use sassc-rails for newer Rails versions
-gem 'sass-rails', '~> 5.0'
-gem 'coffee-rails', '~> 4.2'
-
+#sass-rails is depricated
+#gem 'sass-rails'
+gem 'sassc-rails'
+gem 'coffee-rails'
 # gem 'material_icons'
 
-# See https://github.com/sstephenson/execjs#readme for more supported runtimes
-# gem 'therubyracer', :platforms => :ruby
+  # See https://github.com/sstephenson/execjs#readme for more supported runtimes
+  # gem 'therubyracer', :platforms => :ruby
 
-# Use import map
-# No need to use importmap-rails since it's a new feature in Rails 7, and we're using Rails 5.x
+# use import map
+gem "importmap-rails", "~> 1.1"
 
-# Turbo and Stimulus are not supported in Rails 5, so they are excluded
+# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
+gem "turbo-rails"
+
+# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
+gem "stimulus-rails"
 
 gem 'haml'
 gem 'haml-rails'
 
-gem 'jbuilder', '~> 2.7'
+gem 'jbuilder'
 
 # jquery addition
 gem 'jquery-rails'
+#gem 'jquery-ui-rails'
+#gem 'jquery-timepicker-addon-rails'
+#gem 'jquery-tablesorter'
+#gem 'jquery-countdown-rails'
 
 #syntax highlighter
 gem 'rouge'
 
 #bootstrap add-ons
-gem 'bootstrap', '~> 4.0'
+#gem 'bootstrap-sass', '~> 3.4.1'
+gem 'bootstrap', '~> 5.3'
+#gem 'bootstrap-switch-rails'
+#gem 'bootstrap-toggle-rails'
+#gem 'autoprefixer-rails'
 gem 'momentjs-rails'
+#gem 'rails_bootstrap_sortable'
+#gem 'bootstrap-datepicker-rails'
+#gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
+#gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
+#gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
 gem 'simple_form'
 
 #ace editor
@@ -74,6 +91,7 @@ gem 'rainbow'
 
 gem 'whenever', require: false
 
+
 #---------------- testiing -----------------------
 gem 'minitest-reporters'
 
@@ -83,21 +101,26 @@ gem 'fuzzy-string-match'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'byebug'
 end
 
 group :development do
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
-  gem 'web-console', '~> 2.0'
-  gem 'listen', '~> 3.0.5'
+  gem 'web-console', '>= 3.3.0'
+  gem 'listen', '>= 3.0.5', '< 3.2'
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
   gem 'spring-watcher-listen', '~> 2.0.0'
+
+  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
+  # gem "rack-mini-profiler"
 end
 
 group :test do
   # Adds support for Capybara system testing and selenium driver
-  gem 'capybara', '~> 2.18'
+  gem 'capybara'
   gem 'selenium-webdriver'
-  gem 'webdrivers', '~> 4.1'
+  gem 'webdrivers'
 end
+
+
