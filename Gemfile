@@ -68,7 +68,7 @@ gem 'rouge'
 
 #bootstrap add-ons
 #gem 'bootstrap-sass', '~> 3.4.1'
-gem 'bootstrap', '~> 5.3'
+gem 'bootstrap', '~> 4.6.2'
 #gem 'bootstrap-switch-rails'
 #gem 'bootstrap-toggle-rails'
 #gem 'autoprefixer-rails'
