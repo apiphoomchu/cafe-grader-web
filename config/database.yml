@@ -1,0 +1,23 @@
+shared:
+  adapter: mysql2
+  encoding: utf8
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: db
+  socket: /tmp/mysql.sock
+
+# Define user credentials using YAML anchors
+user_pass: &user_pass
+  username: grader
+  password: Grader@1234
+
+test:
+  <<: *user_pass
+  database: grader
+
+production:
+  <<: *user_pass
+  database: grader
+
+development:
+  <<: *user_pass
+  database: grader
