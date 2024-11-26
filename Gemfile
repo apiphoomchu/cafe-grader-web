@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '3.2.1'
+ruby '3.3.6'
 
 #rails
 gem 'rails', '~>7.0'
@@ -86,7 +86,7 @@ gem 'simple_form'
 gem 'ace-rails-ap'
 
 gem 'mail'
-gem 'rdiscount'  #markdown
+gem 'rdiscount' , '~> 2.2.7.3'  #markdown
 gem 'rainbow'
 
 gem 'whenever', require: false
