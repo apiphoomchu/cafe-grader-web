@@ -16,10 +16,15 @@ class Checker
     when 'relative'
       prog = Rails.root.join 'lib', 'checker', (evaluation_type + ".rb")
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
-    when 'custom_cms'
+    when 'postgres'
+      prog = Rails.root.join 'lib', 'checker', 'postgres_checker.rb'
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
+    when 'custom_cms'
+      return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
+    when 'no_check'
+      return ""
     end
   end
 
@@ -54,6 +59,8 @@ class Checker
       else
         return report_check_wrong
       end
+    when 'postgres'
+      return process_result_cms(out,err)
     when 'custom_cms', 'custom_cafe'
       if status.exitstatus == 0
         if evaluation_type == 'custom_cms'
@@ -65,11 +72,12 @@ class Checker
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
         return report_check_error(comment)
       end
+    when 'no_check'
+      return report_check_partial(0)
     else
       return report_check_error('unknown evaluation type')
     end
   end
-
 
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there
@@ -123,9 +131,9 @@ class Checker
 
   def report_check(score,comment)
     x = {score: score, comment: comment}
-    if score == 1
+    if score.to_f == 1
       x[:result] = :correct
-    elsif score == 0
+    elsif score.to_f == 0
       x[:result] = :wrong
     else
       x[:result] = :partial

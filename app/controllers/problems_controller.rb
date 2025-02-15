@@ -26,18 +26,13 @@ class ProblemsController < ApplicationController
   before_action :stimulus_controller
 
   def index
-    tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
-    ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-    @problems = @current_user.problems_for_action(:edit).joins(:datasets)
-      .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
-      .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
-      .includes(:tags).order(date_added: :desc).group('problems.id')
-      .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
-      .select("MIN(MS.ms_count) as ms_count")
-      .with_attached_statement
-      .with_attached_attachment
+    @problem = problem_for_manage(@current_user)
   end
 
+  def manage_query
+    @problem = problem_for_manage(@current_user)
+    render 'manage_problem'
+  end
 
   # as turbo
   def add_dataset
@@ -196,26 +191,29 @@ class ProblemsController < ApplicationController
 
   def do_manage
 
+
     @result = []
     @error = []
     problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids )
+
+    @toast = {title: "Bulk Manage #{problems.count} #{'problem'.pluralize(problems.count)}"}
 
     change_date_added(problems) if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
     add_to_contest(problems) if params.has_key? 'add_to_contest'
     if params[:change_enable] == '1'
       problems.update_all(available: params[:enable] == 'yes')
-      @result << "Enabled are set to #{params[:enable]}"
+      @result << "Set \"Available\" to <strong>#{params[:enable]}</strong>"
     end
     if params[:add_tags] == '1'
       problems.each { |p| p.tag_ids += params[:tag_ids] } 
-      tag_names = Tag.where(id:params[:tag_ids]).pluck(:name).join(', ')
-      @result << "Following tags are added  #{tag_names}"
+      tag_names = Tag.where(id:params[:tag_ids]).pluck(:name).map{ |x| "[<strong>#{x}</strong>]"}.join(', ')
+      @result << "Add tags #{tag_names}"
     end
 
     if params[:set_languages] == '1'
       permitted_lang = Language.where(id: params[:lang_ids]).pluck(:name)
       problems.update_all(permitted_lang: permitted_lang.join(' '))
-      @result << "Permitted languages are changed to #{permitted_lang.join ', '}"
+      @result << "Permitted languages are changed to #{permitted_lang.map{ |x| "[<strong>#{x}</strong>]"}.join(', ')}"
     end
 
     #add to groups
@@ -231,17 +229,20 @@ class ProblemsController < ApplicationController
             failed << p.full_name
           end
         end
-        @result << "Problems are added to group #{group.name}" if ok.count > 0
-        @error << "The following problem are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
+        @result << "Added to group <strong>#{group.name}</strong>"
+        @result << "The following problem are already in the group <strong>#{group.name}</strong>: " + failed.join(', ') if failed.count > 0
       end
       #flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
       #flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
     end
 
+    @toast[:body] = "<ul> #{@result.map{|x| "<li>#{x}</li>"}.join}  </ul>".html_safe
+    render 'turbo_toast'
+
 
     #redirect_to :action => 'manage'
-    @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
-    render :manage
+    #@problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
+    #render :manage
   end
 
   def import
@@ -259,13 +260,12 @@ class ProblemsController < ApplicationController
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
-    #chekc valid group
-    group = Group.find(params[:problem][:group]) rescue nil
+    #check valid group
+    group = Group.find(params[:problem][:groups]) rescue nil
     unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
       @errors = ['You can only upload a problem into a group that you are editor']
       render :import and return
     end
-
 
     pi = ProblemImporter.new
 
@@ -302,7 +302,10 @@ class ProblemsController < ApplicationController
     else
       @log = pi.log
       @problem = pi.problem
-      group.problems << @problem if group
+      if group && !group.problems.include?(@problem)
+        group.problems << @problem
+        @log << "The problem was added to the group '#{group.name}'"
+      end
 
       # when non-admin (editor) import a problem, we set available to true
       # (because they cannot set the available) but set the enabled to false
@@ -366,7 +369,6 @@ class ProblemsController < ApplicationController
       @stimulus_controller = 'problem'
     end
 
-
     def set_problem
       @problem = Problem.find(params[:id])
     end
@@ -421,7 +423,7 @@ class ProblemsController < ApplicationController
     def change_date_added(problems)
       date = Date.parse(params[:date_added])
       problems.update_all(date_added: date)
-      @result << "Date changed to #{date}"
+      @result << "Date added changed to <strong>#{date}</strong>"
     end
 
     def add_to_contest(problems)
@@ -445,6 +447,19 @@ class ProblemsController < ApplicationController
         end
       end
       return Problem.where(id: ids)
+    end
+
+    def problem_for_manage(user)
+      tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
+      ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
+      return@problems = user.problems_for_action(:edit).joins(:datasets)
+        .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
+        .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
+        .includes(:tags).order(date_added: :desc).group('problems.id')
+        .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
+        .select("MIN(MS.ms_count) as ms_count")
+        .with_attached_statement
+        .with_attached_attachment
     end
 
 end

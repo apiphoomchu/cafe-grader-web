@@ -6,7 +6,7 @@ class Contest < ApplicationRecord
   has_many :users, through: :contests_users
 
   scope :enabled, -> { where(enabled: true) }
-  scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
+  # scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
   # new_users are active record relation
   # return a toast reaponse hash
@@ -14,9 +14,11 @@ class Contest < ApplicationRecord
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
-  def active?
-    now = Time.zone.now
-    return enabled? && start <= now && stop >= now
+  # return an ActiveRecord relation of users that is submittable for this con
+  def submittable_users(current_time = Time.zone.now)
+    return User.none unless enabled?
+    user_ids = contests_users.where(enabled: true).where('IFNULL(extra_time_second) >= ?', current_time - self.stop).pluck :user_id
+    Users.where(id: user_ids, enabled: true)
   end
 
   def add_users(new_users)
@@ -132,19 +134,52 @@ class Contest < ApplicationRecord
     return 60
   end
 
+  # return a submissions of this contests
+  # this includes extra_time_second and start_offset_second as well
+  def submissions
+    Submission.joins(user: :contests_users)
+      .where('contest_id = ?',self.id)
+      .where(user: users, problem: problems)
+      .where('submitted_at >= DATE_SUB(?,INTERVAL start_offset_second SECOND)',start)
+      .where('submitted_at <= DATE_ADD(?,INTERVAL extra_time_second SECOND)',stop)
+  end
+
+  def user_submissions(user)
+    cu = contests_users.where(user: user).take
+    actual_start = start - cu.start_offset_second.second
+    actual_stop = stop + cu.extra_time_second.second
+    Submission.where(user: user, problem: problems)
+      .where('submitted_at >= ?',actual_start)
+      .where('submitted_at <= ?',actual_stop)
+  end
+
   #
   # -------- report ---------------
   #
-  
   def score_report
     # calculate submission with max score
-    Submission.in_range(:time,start,stop)
-      .where(user: users, problem: problems)
-      .group('user_id,problem_id')
-      .select('MAX(submissions.points) as max_score, user_id, problem_id')
+    max_records = self.submissions
+      .group('submissions.user_id,submissions.problem_id')
+      .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
+
+    # records having the same score as the max record
+    records = self.submissions.joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+                               'submissions.points = MAX_RECORD.max_score AND ' +
+                               'submissions.user_id = MAX_RECORD.user_id AND ' +
+                               'submissions.problem_id = MAX_RECORD.problem_id ').joins(:problem)
+      .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
+      .select('problems.name')
+      .select('max_score')
+      .select('submitted_at')
+      .select('submissions.id as sub_id')
+      .select('submissions.problem_id,submissions.user_id')
+
+
+    return Submission.calculate_max_score(records,users,problems)
   end
 
   protected
+
   # this is refactored from the report controller
   #  *records* is a result from Contest.score_report
   #  *users* is the User relation that is used to build *records*

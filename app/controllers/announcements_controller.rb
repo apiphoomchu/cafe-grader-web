@@ -1,6 +1,6 @@
 class AnnouncementsController < ApplicationController
 
-  before_action :set_announcement, only: [:show, :edit, :create, :edit, :destroy, :update,
+  before_action :set_announcement, only: [:show, :edit, :destroy, :update, :delete_file,
                                           :toggle_published, :toggle_front]
 
   before_action :admin_authorization
@@ -42,9 +42,15 @@ class AnnouncementsController < ApplicationController
   def edit
   end
 
+  def delete_file
+    @announcement.file.purge
+    redirect_to(@announcement)
+  end
+
   # POST /announcements
   # POST /announcements.xml
   def create
+    @announcement = Announcement.new(announcement_params)
     respond_to do |format|
       if @announcement.save
         flash[:notice] = 'Announcement was successfully created.'

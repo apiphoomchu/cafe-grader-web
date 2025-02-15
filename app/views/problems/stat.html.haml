@@ -1,6 +1,6 @@
-%h1
-  Problem Stat:
-  = @problem.full_name
+%h1= @problem.full_name
+%h5.font-monospace
+  = @problem.name
 
 .row.mb-3
   .col-md-8
@@ -54,7 +54,7 @@
         - row_odd,curr = !row_odd, sub.user if curr != sub.user
         %tr
           %td= link_to sub.id, submission_path(sub)
-          %td= link_to sub.user.login, stat_user_path(sub.user)
+          %td= link_to sub.user.login, stat_user_admin_path(sub.user)
           %td= sub.user.full_name
           %td= sub.language.pretty_name
           %td{data: {order: sub.submitted_at}}

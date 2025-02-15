@@ -58,10 +58,12 @@ class ContestsController < ApplicationController
   end
 
   def view_query
-    @result = Contest.build_score_result(@contest.score_report,@contest.users)
+    #@result = Contest.build_score_result(@contest.score_report,@contest.users)
+    @result = @contest.score_report
 
     render json: {
       data: @contest.contests_users.joins(:user)
+        .where(role: 'user')
         .select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat), 
       result: @result,
       problem: @contest.problems.select(:id,:name)
@@ -82,7 +84,7 @@ class ContestsController < ApplicationController
   def clone
     new_contest = Contest.new(name: @contest.name + ' Copy', start: Time.zone.now, stop: Time.zone.now+3.hour)
     new_contest.save
-    @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id)}
+    @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id, role: cu.role)}
     @contest.contests_problems.each { |cp| new_contest.contests_problems.create(problem_id: cp.problem_id)}
     redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
   end
@@ -140,7 +142,7 @@ class ContestsController < ApplicationController
   # --- users & problems ---
   def show_users_query
     render json: {data: @contest.contests_users.joins(:user)
-      .select('contests_users.id',:user_id,:enabled, :full_name, :login, :remark, :seat)}
+      .select('contests_users.id',:user_id,:enabled, :full_name, :role, :login, :remark, :seat, :extra_time_second, :start_offset_second)}
   end
 
   def show_problems_query
@@ -175,6 +177,16 @@ class ContestsController < ApplicationController
       gu = @contest.contests_users.where(user: @user).first
       gu.update(enabled: !gu.enabled?)
       @toast[:body] = 'User was updated.'
+    when 'make_editor', 'make_user'
+      target_role = params[:command].split('_')[1]
+
+      if @user != @current_user || @user.admin? || target_role == 'editor'
+        ContestUser.where(user: @user, contest: @contest).update(role: target_role)
+        @toast[:body] = "#{@user.login}'s role changed to #{target_role}."
+      else
+        @toast[:body] = "Cannot demote yourself"
+        @toast[:type] = :alert
+      end
     else
       @toast[:body] = "Unknown command"
     end
@@ -281,6 +293,9 @@ class ContestsController < ApplicationController
     ms_since_last_check_in = ((current - last) * 1000).to_i
     if (@current_contest)
       ms_until_contest_end = ((@current_contest.stop - current) * 1000).to_i
+
+      cu = ContestUser.where(contest: @current_contest, user: @current_user)
+      cu.update(last_heartbeat: current) if (cu)
     end
     render json: {ms_since_last_check_in: ms_since_last_check_in, ms_until_contest_end: ms_until_contest_end, current_time: current}
   end
@@ -300,6 +315,13 @@ class ContestsController < ApplicationController
   def set_system_mode
     if ['standard','contest','indv-contest','analysis'].include? params[:mode]
       GraderConfiguration.where(key: 'system.mode').update(value: params[:mode])
+
+      if ['contest','indv-contest'].include? params[:mode]
+        # contest || indv-contest
+        GraderConfiguration.set_exam_mode(true)
+      else  # standard || analysis
+        GraderConfiguration.set_exam_mode(false)
+      end
       redirect_to contests_path, notice: 'Mode changed succesfully'
     else
       redirect_to contests_path, notice: 'Unrecognized mode'
@@ -321,7 +343,8 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop)
+      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop, :finalized)
+
     end
 
 end

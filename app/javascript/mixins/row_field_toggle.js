@@ -13,12 +13,28 @@ export const rowFieldToggle = (superclass) => class extends superclass {
   resetToggleForm(event) {
     const form = event.target
     form.action = form.dataset.orig_action
+    if (form.dataset.tableReloadId) {
+      $(`#${form.dataset.tableReloadId}`).DataTable().ajax.reload()
+    }
   }
 
   //this function is for submitting a form
   //
   setFieldAndSubmit(form,field,value,confirm) {
 
+  }
+
+
+  // generic function for handling form submit via turbo
+  // when response is OK, it will get the datatable api
+  // and make ajax refresh
+  //
+  //   "table_id" should be jQuery selector that selects a atable (e.g., '#main-table')
+  genericSubmitEnd(event,table_id) {
+    if (event.detail.fetchResponse.response.ok) {
+      table = new DataTable.Api(table_id)
+      table.ajax.reload()
+    }
   }
   
 };

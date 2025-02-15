@@ -116,7 +116,12 @@ class Compiler
 
     if compile_result[:success]
       #run any post compilation
-      post_compile
+      begin
+        post_compile
+      rescue => e
+        raise GraderError.new("Error during post_compile of Sub ##{@sub.id} (Language = #{@sub.language.name}), msg = #{e.message}  ",
+                              submission_id: @sub.id)
+      end
 
       # the result should be at @bin_path
       begin
@@ -226,6 +231,8 @@ class Compiler
       return Compiler::Go
     when 'postgres'
       return Compiler::Postgres
+    when 'archive'
+      return Compiler::Blank
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)

@@ -15,13 +15,13 @@ class SubmissionsController < ApplicationController
       @problem = nil
       @submissions = nil
     else
-      @problem = Problem.find_by_id(params[:problem_id])
-      if (@problem == nil) or (not @problem.available)
+      @problem = Problem.find(params[:problem_id]) rescue nil
+      if (@problem == nil) || (! @user.can_view_problem?(@problem))
         redirect_to list_main_path
         flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
-      @submissions = Submission.find_all_by_user_problem(@user.id, @problem.id).order(id: :desc)
+      @submissions = Submission.where(user: @user, problem: @problem).order(id: :desc)
     end
   end
 
@@ -39,11 +39,17 @@ class SubmissionsController < ApplicationController
   end
 
   def download
+    if @submission.language.binary? && @submission.binary
+      send_data @submission.binary, filename: @submission.download_filename, type: @submission.content_type || 'application/octet-stream', disposition: 'attachment'
+      return 
+    end
+
+    # no binary, send the source
     send_data(@submission.source, {:filename => @submission.download_filename, :type => 'text/plain'})
   end
 
   def compiler_msg
-    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: @submission.compiler_message}
+    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 
   #on-site new submission on specific problem
@@ -54,11 +60,18 @@ class SubmissionsController < ApplicationController
       return
     end
     @source = ''
-    if (params[:view_latest])
-      sub = Submission.find_last_by_user_and_problem(@current_user.id,@problem.id)
-      @source = @submission.source.to_s if @submission and @submission.source
+
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+
+    if @problem.get_permitted_lang_as_ids.count == 1
+      @language = problem_lang
+      @as_binary = @language.binary?
+    else
+      @language = @current_user.default_language || problem_lang || Language.first
+      @as_binary = @language.binary?
     end
-    @lang_id = @current_user.default_language || Language.first.id
+
+
     render 'edit'
   end
 
@@ -66,7 +79,8 @@ class SubmissionsController < ApplicationController
   def edit
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @lang_id = @submission.language_id || @current_user.default_language || Language.first.id
+    @language = @submission.language || @current_user.default_language || Language.first
+    @as_binary = @language.binary?
   end
 
 

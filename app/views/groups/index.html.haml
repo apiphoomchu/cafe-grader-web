@@ -21,10 +21,10 @@
         %td= group.description
         %td
           .form-check.form-switch
-            %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', id: group.id}}
+            %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', 'row-id': group.id}}
         %td
           = link_to 'Manage', group
-        %td
+        %td.py-1.align-middle
           = link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger btn-sm'
 
 -# hidden form for group toggle

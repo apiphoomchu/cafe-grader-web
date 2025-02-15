@@ -13,7 +13,7 @@ export default class extends rowFieldToggle(Controller) {
 
   toggle(event) {
     event.target.disabled = true
-    const recId = event.target.dataset.id
+    const recId = event.target.dataset.rowId
     const field = event.target.dataset.field
     const form = field === 'available'     ? this.toggleAvailableFormTarget :
                  field === 'view_testcase' ? this.toggleViewTestcaseFormTarget :
@@ -33,6 +33,14 @@ export default class extends rowFieldToggle(Controller) {
     const active = this.activeTabTarget
     active.value = $('#dataset .tab-pane.active')[0].id
     form.requestSubmit()
+  }
+
+  // event handling binded with bulk manage form submit
+  bulkManageSubmitEnd(event) {
+    this.genericSubmitEnd(event,'#main-table')
+    if (event.detail.fetchResponse.response.ok) {
+      document.querySelectorAll('.manage-action').forEach(cb => cb.checked = false);
+    }
   }
 
 }
