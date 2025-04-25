@@ -9,7 +9,7 @@ pin_all_from "app/javascript/mixins", under: "mixins"
 
 #we don't really need jquery in importmap because we use sprocket version
 #but... bootbox tries to import jquery, so... we have to pin it here
-pin "jquery", to: 'my_jquery.js', preload: true
+# pin "jquery", to: 'my_jquery.js', preload: true
 # this is pinned but not import by other
 
 
@@ -31,6 +31,7 @@ pin "cafe_bundle", to: "cafe_bundle.js"
 pin "cafe", to: "cafe.js"
 pin "cafe_event", to: "cafe_event.js"
 pin "cafe_datatable", to: 'cafe_datatable.js'
+pin "cafe_turbo", to: "cafe_turbo.js"
 
 #pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js
@@ -44,4 +45,4 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 
 # rails usj (should be removed soon)
 pin "rails-ujs", to: 'rails-ujs.esm.js'
-pin "bootbox" # @6.0.0
+pin "bootbox", to: 'bootbox.js' # @6.0.0

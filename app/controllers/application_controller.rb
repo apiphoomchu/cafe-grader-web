@@ -11,6 +11,8 @@ class ApplicationController < ActionController::Base
   before_action :unique_visitor_id
   before_action :active_controller_action
 
+  include ActiveStorage::SetCurrent
+
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
@@ -94,6 +96,13 @@ class ApplicationController < ActionController::Base
       return false
     end
     return true
+  end
+
+  # check whether the user is an editor of any group
+  def group_editor_authorization
+    return true if @current_user.admin?
+    return true if @current_user.groups_for_action(:edit).any?
+    unauthorized_redirect(msg: "You cannot manage any problem");
   end
 
   # redirect when user does not have specific roles in any group
