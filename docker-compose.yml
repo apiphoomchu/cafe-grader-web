@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: mysql2://grader:Grader%401234@db:3306/grader
+      RAILS_MAX_THREADS: 5
+    volumes:
+      - .:/app
+      - gem_cache:/usr/local/bundle
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b 0.0.0.0"
+    networks:
+      - cafe-grader-network
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: grader
+      MYSQL_USER: grader
+      MYSQL_PASSWORD: Grader@1234
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - cafe-grader-network
+
+networks:
+  cafe-grader-network:
+    driver: bridge
+
+volumes:
+  gem_cache:
+  mysql_data:
